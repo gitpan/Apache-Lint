@@ -1,9 +1,8 @@
-# $Id: 00.load.t,v 1.1.1.1 2002/02/26 17:45:39 petdance Exp $
+#!/usr/bin/perl -w
 
-BEGIN { $| = 1; print "1..1\n"; }
-END   { print "not ok 1\n" unless $loaded; }
+# $Id: 00.load.t,v 1.2 2002/05/31 20:55:42 petdance Exp $
 
-use Apache::Lint;
-$loaded = 1;
-print "ok\n";
+use Test::More tests => 1;
+
+use_ok( 'Apache::Lint', '0.01' );
 

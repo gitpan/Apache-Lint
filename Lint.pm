@@ -23,7 +23,18 @@ XXX Put in sample code into httpd.conf
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
+
+    $Id: Lint.pm,v 1.3 2002/05/31 21:30:55 petdance Exp $
+
+=cut
+
+our $VERSION = '0.02';
+
+=head1 CAVEATS
+
+EVERYTHING that gets passed thru Apache::Lint gets forced to text/html, because
+Apache::RegistryFilter eats the content-type. :-(
 
 =head1 TODO
 
@@ -37,12 +48,11 @@ Almost everything is a TODO.  This version barely runs at all, but I want to get
 
 =cut
 
-our $VERSION = '0.01';
 our $DEBUG = 1;
 
 use mod_perl 1.21;
 use Apache;
-use Apache::Constants qw( OK DECLINED );
+use Apache::Constants qw( OK );
 use Apache::File;
 use Apache::Log;
 use HTML::Lint;
@@ -64,96 +74,35 @@ sub handler {
 	return $status;
     }
 
+    my $type = $r->content_type;
+    $type = 'text/html';
     my $is_html = ( $r->content_type =~ m!text/html!i );
-    $is_html = 1;
+
+    $r->send_http_header( $type );
+    local $/ = undef;
+    my $output = <$fh>;
+    $r->print( $output );
 
     if ( $is_html ) {
 	$log->info( "\tPassing thru HTML::Lint" );
-	local $/;
-	my $html = <$fh>;
-
-	print $html; 
 
         my $lint = new HTML::Lint;
 	$lint->newfile( $r->uri );
-        $lint->parse( $html );
+        $lint->parse( $output );
 	$lint->eof;
 
 	for my $error ( $lint->errors() ) {
 	    $log->warn( $error->as_string() );
 	}
     } else {
-	$log->info("\trequest is not for an html document ",
-               "(Apache::Filter) - skipping...")
+	$log->info("\trequest is not for an html document ", "(Apache::Filter) - skipping...")
 	    if $Apache::Lint::DEBUG;
-
-	print while <$fh>;
-	# we can't ever return DECLINED when using Apache::Filter
-	$status = OK;
     }
 
-    #$r->send_http_header($r->content_type);
     $log->info("Exiting Apache::Lint");
 
     return $status;
 }
-
-sub handlerx {
-    my $r = shift;
-    $r = $r->filter_register;
-    my $log = $r->server->log;
-
-    $log->info("Using Apache::Lint");
-
-    unless ($r->content_type =~ m!text/html!i) {
-	$log->info("\trequest is not for an html document - skipping...")
-	    if $Apache::Lint::DEBUG;
-	$r->headers_out->set( "Lint-status" => "skipped" );
-	return DECLINED;
-    }
-    
-    my $fh;
-    my $status;
-    ($fh, $status) = $r->filter_input;
-
-    unless ( $status == OK ) {
-	$log->info( "Exiting because status = $status" );
-	return $status;
-    }
-
-    $r->headers_out->set( "Lint-status" => "touched" );
-
-    # Slurp the file.
-    my $html = do {local $/; <$fh>};
-    print $html;
-    return OK;
-}
-
-=pod
-sub randomcrapforholding {
-    my $lint = new HTML::Lint;
-    $lint->newfile( $r->uri );
-    $lint->parse( $html );
-    $lint->eof;
-
-    my $nerrors = scalar $lint->errors();
-    
-    for my $error ( $lint->errors() ) {
-	$log->info( $error->as_string() );
-    }
-
-    $log->info( "Done linting", localtime );
-
-    $r->headers_out->set( "Lint-status" => "$nerrors errors" );
-
-    $r->send_http_header('text/html');
-    my $phase = "gronk";
-    $r->headers_out->set( "Lint-$phase" => $phase );
-    print $html;
-
-    return OK;
-}
-=cut
 
 1;
 
