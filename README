@@ -1,0 +1,8 @@
+# $Id: README,v 1.1.1.1 2002/02/26 17:45:39 petdance Exp $
+
+Apache::Lint Version 0.01
+
+Apache::Lint is a wrapper around HTML::Lint.
+
+Andy Lester
+andy@petdance.com

@@ -1,0 +1,7 @@
+# $Id: Changes,v 1.2 2002/05/28 22:09:39 petdance Exp $
+
+Revision history for Perl extension Apache::Lint.
+
+0.01	May 28, 2002
+	* First basic version that barely runs at all
+

@@ -1,0 +1,7 @@
+# $Id: MANIFEST,v 1.2 2002/05/28 22:05:51 petdance Exp $
+MANIFEST
+README
+Changes
+Makefile.PL
+Lint.pm
+t/00.load.t
