@@ -1,7 +1,9 @@
-# $Id: MANIFEST,v 1.2 2002/05/28 22:05:51 petdance Exp $
-MANIFEST
-README
 Changes
+MANIFEST
+META.yml # Will be created by "make dist"
 Makefile.PL
+README
 Lint.pm
-t/00.load.t
+t/00-load.t
+t/pod-coverage.t
+t/pod.t

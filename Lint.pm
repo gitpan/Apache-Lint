@@ -12,96 +12,69 @@ Apache::Lint - Apache wrapper around HTML::Lint
 Apache::Lint passes all your mod_perl-generated code through the HTML::Lint module,
 and spits out the resulting errors into.
 
-	<Files *.pl>
-		SetHandler      perl-script
-		PerlHandler	Apache::RegistryFilter Apache::Lint
-		Options		+ExecCGI
-		PerlSetVar	Filter On
-	</Files>
+    <Location /my/uri>
+        SetHandler      perl-script
+        PerlSetVar      Filter On
+        PerlHandler     Your::Handler Apache::Lint
+    </Location>
 
-XXX Put in sample code into httpd.conf
+Your handler C<Your::Handler> must be Apache::Filter-aware.  At the top
+of your handler, put this line:
+
+    my $r = shift;
+    $r = $r->filter_register
 
 =head1 VERSION
 
-Version 0.02
-
-    $Id: Lint.pm,v 1.3 2002/05/31 21:30:55 petdance Exp $
+Version 0.10
 
 =cut
 
-our $VERSION = '0.02';
-
-=head1 CAVEATS
-
-EVERYTHING that gets passed thru Apache::Lint gets forced to text/html, because
-Apache::RegistryFilter eats the content-type. :-(
-
-=head1 TODO
-
-Almost everything is a TODO.  This version barely runs at all, but I want to get it out there.
-
-=over 4
-
-=item * Fix it so the HTML::Lint::Errors get loaded properly.
-
-=back
-
-=cut
-
-our $DEBUG = 1;
+our $VERSION = '0.10';
 
 use mod_perl 1.21;
-use Apache;
-use Apache::Constants qw( OK );
-use Apache::File;
+use Apache::Constants qw( OK HTTP_OK );
 use Apache::Log;
 use HTML::Lint;
+
+=head1 FUNCTIONS
+
+=head2 handler()
+
+Apache::Filter-aware content handler.  Your other handlers in the chain
+must also be filter-aware.
+
+=cut
 
 sub handler {
     my $r = shift;
     $r = $r->filter_register;
 
-    my $log    = $r->server->log;
-
-    $log->info("Using Apache::Lint");
+    my $log = $r->server->log;
 
     # Get any output from previous filters in the chain.
-    (my $fh, my $status) = $r->filter_input;
+    (my $fh, my $handler_status) = $r->filter_input;
 
-    unless ($status == OK) {
-	$log->warn("\tApache::Filter returned $status");
-	$log->info("Exiting Apache::Lint");
-	return $status;
-    }
+    return $handler_status unless $handler_status == OK;
 
-    my $type = $r->content_type;
-    $type = 'text/html';
-    my $is_html = ( $r->content_type =~ m!text/html!i );
-
-    $r->send_http_header( $type );
-    local $/ = undef;
-    my $output = <$fh>;
+    my $output = do { local $/ = undef; <$fh> };
     $r->print( $output );
 
-    if ( $is_html ) {
-	$log->info( "\tPassing thru HTML::Lint" );
+    my $response_code = $r->status;
+    my $type = $r->content_type;
+    return OK unless ($r->content_type eq "text/html") && ($r->status eq HTTP_OK);
 
-        my $lint = new HTML::Lint;
-	$lint->newfile( $r->uri );
-        $lint->parse( $output );
-	$lint->eof;
+    my $lint = new HTML::Lint;
+    $lint->newfile( $r->uri );
+    $lint->parse( $output );
+    $lint->eof;
 
-	for my $error ( $lint->errors() ) {
-	    $log->warn( $error->as_string() );
-	}
-    } else {
-	$log->info("\trequest is not for an html document ", "(Apache::Filter) - skipping...")
-	    if $Apache::Lint::DEBUG;
+    if ( $lint->errors ) {
+        $log->warn( "Apache::Lint found errors in ", $r->the_request );
+        $log->warn( $_->as_string() ) for $lint->errors;
     }
 
-    $log->info("Exiting Apache::Lint");
-
-    return $status;
+    return $handler_status;
 }
 
 1;

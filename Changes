@@ -1,11 +1,13 @@
-# $Id: Changes,v 1.3 2002/05/31 21:30:55 petdance Exp $
+Revision history for Apache-Lint
 
-Revision history for Perl extension Apache::Lint.
+0.10    Mon Nov 22 16:36:43 CST 2004
 
-0.02	May 31, 2002
-	* Got basic linting working by hardcoding the content type
-	as being 'text/html'.  This is a Bad Thing.
+        [ENHANCEMENTS]
+        * Brand new distribution, recreated from scratch with
+          Module::Starter.  Still don't have tests for it, other than
+          the defaults.
 
-0.01	May 28, 2002
-	* First basic version that barely runs at all
+        * Correctly and quietly passes along output if the previous
+          filter isn't happy, or is a redirect.
 
+0.02    Ancient history, not even worth noting here.
